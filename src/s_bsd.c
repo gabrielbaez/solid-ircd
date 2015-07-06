@@ -611,7 +611,7 @@ static int check_init(aClient * cptr, char *sockn)
 	if (inet_netof(sk.addr4.sin_addr) == IN_LOOPBACKNET)
 	{
 	    cptr->hostp = NULL;
-	    strncpyzt(sockn, me.sockhost, HOSTLEN);
+	    strncpyzt(sockn, me.sockhost, HOSTLEN + 1);
 	}
 	memcpy((char *) &cptr->ip.ip4, (char *) &sk.addr4.sin_addr,
 	       sizeof(struct in_addr));
@@ -636,15 +636,21 @@ static int check_init(aClient * cptr, char *sockn)
  */
 int check_client(aClient *cptr)
 {
-    static char sockname[HOSTLEN + 1];
+    char *sockname;
     struct hostent *hp = NULL;
     int i;
 
     Debug((DEBUG_DNS, "ch_cl: check access for %s[%s]",
            cptr->name, cipntoa(cptr)));
 
-    if (check_init(cptr, sockname))
-        return -2;
+    if (cptr->ip_family == AF_INET &&
+	inet_netof(cptr->ip.ip4) == IN_LOOPBACKNET)
+    {
+	cptr->hostp = NULL;
+	sockname = me.sockhost;
+    }
+    else
+	sockname = cptr->sockhost;
 
     hp = cptr->hostp;
     /* 
@@ -666,6 +672,12 @@ int check_client(aClient *cptr)
             hp = NULL;
         }
     }
+
+    /*
+     * Use the client's IP address instead of truncating a long hostname.
+     */
+    if (hp && strlen(hp->h_name) > HOSTLEN)
+	hp = NULL;
 
     if ((i = attach_Iline(cptr, hp, sockname)))
     {
@@ -988,6 +1000,11 @@ void close_connection(aClient *cptr)
         break;
 
     clear_conflinks(cptr);
+
+    if (cptr->webirc_username)
+	MyFree(cptr->webirc_username);
+    if (cptr->webirc_ip)
+	MyFree(cptr->webirc_ip);
 
     cptr->from = NULL;      /* ...this should catch them! >:) --msa */
 

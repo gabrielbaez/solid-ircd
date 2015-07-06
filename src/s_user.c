@@ -515,7 +515,7 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username,
             spamchar = *user->host;
 #endif
                 
-        strncpyzt(user->host, sptr->sockhost, HOSTLEN);
+        strncpyzt(user->host, sptr->sockhost, HOSTLEN + 1);
                 
         dots = 0;
         p = user->host;
@@ -1501,6 +1501,7 @@ m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int notice)
     char *target;
     char *dccmsg;
     int tleft = MAXRECIPIENTS;  /* targets left */
+    char channel[CHANNELLEN + 1]; /* for the auditorium mode -Kobi. */
 
     cmd = notice ? MSG_NOTICE : MSG_PRIVATE;
     ismine = MyClient(sptr);
@@ -1588,6 +1589,26 @@ m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int notice)
                     if (ismine && !notice)
                         send_msg_error(sptr, parv, target, ret);
                     continue;
+                }
+
+                if((chptr->mode.mode & MODE_AUDITORIUM) && !is_chan_opvoice(sptr, chptr))
+                {
+                    /* Channel is in auditorium mode! */
+                    if(strlen(chptr->chname)+6 > CHANNELLEN) continue; /* Channel is too long.. we must be able to add
+                                                                           -relay to it... */
+                    strcpy(channel, chptr->chname);
+                    strcat(channel, "-relay");
+                    if(!(chptr = find_channel(channel, NULL))) continue; /* Can't find the relay channel... */
+                    /* I originally thought it's a good idea to enforce #chan-relay modes but then I figured out we
+                       would most likely want to have it +snt and only accept messages from #chan members... -Kobi.
+                    if ((ret = can_send(sptr, chptr, parv[2])))
+                    {
+                        if (ismine && !notice)
+                            send_msg_error(sptr, parv, target, ret);
+                        continue;
+                    }
+                    */
+                    s = target = chptr->chname; /* We want ops to see the message coming to #chan-relay and not to #chan */
                 }
 
                 if (!notice)
@@ -1898,6 +1919,7 @@ m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
     aChannel   *chptr;
     char       *nick, *tmp, *name;
     char       *p = NULL;
+    ServicesTag *servicestag;
     int         len, mlen;
 
     if (parc < 2)
@@ -2041,10 +2063,37 @@ m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
             strcat(buf, " - Server Administrator");
         else if (IsSAdmin(acptr))
             strcat(buf, " - Services Administrator");
-        if (buf[0])
+        /* We don't go through the services tag list here by design, only the first services tag entry
+           may change RPL_WHOISOPERATOR -Kobi_S. */
+        if (buf[0] && (!acptr->user->servicestag || acptr->user->servicestag->raw!=RPL_WHOISOPERATOR))
             sendto_one(sptr, rpl_str(RPL_WHOISOPERATOR), me.name, parv[0], 
                        name, buf);
-        
+
+        if(acptr->user->servicestag)
+        {
+            servicestag = acptr->user->servicestag;
+            while(servicestag)
+            {
+                if(*servicestag->tag && (!servicestag->umode || (sptr->umode & servicestag->umode))) sendto_one(sptr, ":%s %d %s %s :%s", me.name, servicestag->raw, parv[0], name, servicestag->tag);
+                servicestag = servicestag->next;
+            }
+        }
+
+	if (MyConnect(acptr) && acptr->webirc_ip && IsAdmin(sptr))
+	{
+            sendto_one(sptr, ":%s 337 %s %s :%s (%s@%s)",
+		       me.name, parv[0], name,
+		       "User connected using a webirc gateway",
+		       acptr->webirc_username, acptr->webirc_ip);
+	}
+	else if (MyConnect(acptr) && acptr->webirc_ip && IsAnOper(sptr))
+	{
+            sendto_one(sptr, ":%s 337 %s %s :%s (%s)",
+		       me.name, parv[0], name,
+		       "User connected using a webirc gateway",
+		       acptr->webirc_username);
+	}
+
         /* don't give away that this oper is on this server if they're hidden! */
         if (acptr->user && MyConnect(acptr) && ((sptr == acptr) || 
                 !IsUmodeI(acptr) || (parc > 2) || IsAnOper(sptr)))

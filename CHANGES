@@ -1,4 +1,50 @@
-Changes for 2.0.2:
+Changes for 2.0.7:
+------------------
+Kobi Shmueli (1):
+      Fixed a bug on sendto_channel_butserv_me() function (src/send.c)     The bug causes Bahamut to hide mode and topic changes even if the channel isn't in auditorium mode.
+
+
+Changes for 2.0.6:
+------------------
+Kobi Shmueli (5):
+      Added SVSTAG command to let services add "tags" to users.
+      Added cmode +A (Auditorium mode).
+      Auditorium mode fixes (cmode +A)
+      Changed SVSTAG to send/receive umodes in text and fixed incorrect and missing comments.
+      Changes to deal with bogus akills
+
+Ned T. Crigler (2):
+      Fix 63 character hostname truncation.
+      Fix pasteo in find_userban_exact.
+
+
+Changes for 2.0.5:
+------------------
+Juan Baez (1):
+      Remove extra code on s_conf.c - bahamut issue #6 https://github.com/epiphani/bahamut/issues/6
+
+Ned T. Crigler (1):
+      Don't truncate long hostnames.
+
+phreakshow (1):
+      Update include/config.h
+
+
+Changes for 2.0.4:
+------------------
+Ned T. Crigler (1):
+      Add the WEBIRC command.
+
+William Pitcock (6):
+      res: portability improvements for uclibc
+      .gitignore: add include/setup.h.in.
+      include: remove setup.h.in.
+      ircd: clean up compiler warnings using -Wall
+      dh: avoid possible integer underflow using type enforcement.
+      ircd: various warning cleanups and type enforcement enhancements
+
+
+Changes for 2.0.3:
 ------------------
 Ned T. Crigler (1):
       Fix va_list bug in sendto_all_servmask.

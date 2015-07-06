@@ -161,10 +161,14 @@ int user_match_ban(aClient *cptr, struct userBan *ban)
       {
          if(match(ban->h, iptmp) == 0)
             return 1;
+	 if(cptr->webirc_ip && match(ban->h, cptr->webirc_ip) == 0)
+            return 1;
       }
       else
       {
          if(mycmp(ban->h, iptmp) == 0)
+            return 1;
+	 if(cptr->webirc_ip && mycmp(ban->h, cptr->webirc_ip) == 0)
             return 1;
       }
       return 0;
@@ -190,10 +194,16 @@ int user_match_ban(aClient *cptr, struct userBan *ban)
        if (cptr->ip_family == ban->cidr_family &&
 	   bitncmp(&cptr->ip, &ban->cidr_ip, ban->cidr_bits) == 0)
 	   return 1;
-       else
-	   return 0;
-   }
 
+       if (cptr->webirc_ip)
+       {
+	   char ipbuf[16];
+
+	   if (inet_pton(ban->cidr_family, cptr->webirc_ip, ipbuf) == 1 &&
+	       bitncmp(ipbuf, &ban->cidr_ip, ban->cidr_bits) == 0)
+	       return 1;
+       }
+   }
    return 0;
 }
 
@@ -341,10 +351,10 @@ struct userBan *find_userban_exact(struct userBan *borig, unsigned int careflags
          if(!(borig->flags & UBAN_WILDUSER) && mycmp(borig->u, bl->ban->u))
             continue;
 
-	 if (!(borig->cidr_family == bl->ban->cidr_family &&
-	       memcmp(&borig->cidr_ip, &bl->ban->cidr_ip,
-		      sizeof(borig->cidr_ip)) == 0 &&
-	       borig->cidr_bits == bl->ban->cidr_bits))
+	 /* CIDR fields do not match? */
+	 if(borig->cidr_family != bl->ban->cidr_family ||
+	    borig->cidr_bits != bl->ban->cidr_bits ||
+	    bitncmp(&borig->cidr_ip, &bl->ban->cidr_ip, borig->cidr_bits) != 0)
             continue;
 
          return bl->ban;
@@ -362,16 +372,19 @@ struct userBan *find_userban_exact(struct userBan *borig, unsigned int careflags
       b = (int) *s;
 
       LIST_FOREACH(bl, &CIDR4_bans[a][b], lp) {
+         /* must have same wilduser, etc setting */
          if((bl->ban->flags ^ borig->flags) & (UBAN_WILDUSER|careflags))
             continue;
 
+         /* user fields do not match? */
          if(!(borig->flags & UBAN_WILDUSER) && mycmp(borig->u, bl->ban->u))
             continue;
 
-	 if (!(borig->cidr_family == bl->ban->cidr_family &&
-	       memcmp(&borig->cidr_ip, &bl->ban->cidr_ip,
-		      sizeof(borig->cidr_ip)) == 0 &&
-	       borig->cidr_bits == bl->ban->cidr_bits))
+	 /* CIDR fields do not match? */
+	 if(borig->cidr_family != bl->ban->cidr_family ||
+	    borig->cidr_bits != bl->ban->cidr_bits ||
+	    bitncmp(&borig->cidr_ip, &bl->ban->cidr_ip, borig->cidr_bits) != 0)
+            continue;
 
          return bl->ban;
       }
