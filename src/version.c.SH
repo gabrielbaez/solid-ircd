@@ -52,6 +52,7 @@ $spitshell >version.c <<!SUB!THIS!
 char *generation = "$generation";
 char *creation = "$creation";
 char version[128];
+
 char *solidtext[] =
     {
 
@@ -86,7 +87,7 @@ char *solidtext[] =
      "| The_Sphere <solidircd@dmaartens.nl>                                                    ",
      "|----------------------------------------------------------------------------------------",
      "|                                                                                        ",
-     "| Project Manager                                                                        ",
+     "| Developer                                                                       ",
      "| Sheik <sheik@solid-ircd.com>                                                           ",
      "|----------------------------------------------------------------------------------------",
      "|                                                                                        ",
@@ -123,7 +124,7 @@ char *solidtext[] =
      0
 };
 
-char *daltext[] =
+char *infotext[] =
     {
 	 "$package --",
 	 "Based on the original code written by Jarkko Oikarinen",
@@ -143,19 +144,20 @@ char *daltext[] =
 	 "The following people currently compose the bahamut team and",
      "actively maintain the bahamut codebase:",
 	 "epiphani            Aaron Wiebe         epiphani@dal.net",
-     "sedition            David Parton        sedition@dal.net",
-     "Quension            Trevor Talbot       quension@dal.net",
+         "Quension            Trevor Talbot       quension@dal.net",
+	 "Kobi                Kobi Shmueli        kobi@dal.net",
 	 "",
 	 "The following people have contributed code or support",
 	 "to the bahamut team:",
 	 "aClient             Diane Bruce         db@koruna.varner.com",
 	 "Dakal               David Knepper       dakal@dal.net",
 	 "Dalvenjah           Sven Nielsen        dalvenjah@dal.net",
+     "lucas               Lucas Madar         lucas@dal.net",
 	 "MSofty              Mark Salerno        msofty@dal.net",
      "Raistlin_Majere     Jason Slagle        raistlin@bahamut.net",
 	 "Rakarra             Ian Westcott        rakarra@dal.net",
-     "lucas               Lucas Madar         lucas@dal.net",
-	 "srd                 Sean McKay          srd@powertrip.net",
+     "sedition            David Parton        sedition@dal.net",
+	 "srd                 Holbrook Bunting          srd@powertrip.net",
 	 "White_Dragon        Chip Norkus         wd@dal.net",
      "xPsycho             Ryan Smith          xpsycho@dal.net",
 	 "",

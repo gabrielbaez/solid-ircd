@@ -1,3 +1,11 @@
+
+Solid-IRCD Change log
+Changes for 3.5.0
+--------------------
+Gabriel - I'm starting over from scratch hand picking solid-ircd features into latest bahamut code, starting with hostmasking. 
+
+
+Bahamut Change Log
 Changes for 2.0.7:
 ------------------
 Kobi Shmueli (1):

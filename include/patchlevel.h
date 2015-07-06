@@ -24,6 +24,6 @@
 #define MINOR 5
 #define PATCH 0
 
-#define PATCHES ""
+#define PATCHES "beta"
 
 #endif

@@ -1,16 +1,11 @@
-Welcome to Bahamut!
+Welcome to solid-ircd!
 -------------------
+Version 3.5.0
+NOTE: This version does not have all the features in solid-ircd 3.4.8, I'm starting over using latest bahamut release and hand picking features from previous release.
 
 Please refer to the INSTALL file for help instructions on building and
 installing ircd.  The doc/ directory may also be of interest.
 
 Please refer to the CHANGES file to see what has changed recently.
 
-*** IMPORTANT ***
-Please send any SECURITY RELATED bugs to coders@dal.net - any 
-non-critical bugs can be sent to dalnet-src@dal.net - a public list
-for code discussion.
-
-Thanks!
--Bahamut Team
 
