@@ -17,19 +17,19 @@
 # Our specific rules
 #
 !.gitignore
-Makefile
-config.log
-config.guess
-config.sub
-configure
-install-sh
-autom4te.cache
-config.status
-include/setup.h
-include/setup.h.in
-zlib/zconf.h
+#Makefile
+#config.log
+#config.guess
+#config.sub
+#configure
+#install-sh
+#autom4te.cache
+#config.status
+#include/setup.h
+#include/setup.h.in
+#zlib/zconf.h
 
 src/ircd
 src/version.c.last
-tools/convert_conf
-tools/mkpasswd
+#tools/convert_conf
+#tools/mkpasswd
