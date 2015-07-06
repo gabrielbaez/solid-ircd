@@ -93,6 +93,7 @@ int  user_modes[] =
     UMODE_S, 'S',
     UMODE_K, 'K',
     UMODE_I, 'I',
+	UMODE_v, 'v',  /* hostmasking use mode */
     0, 0
 };
 
@@ -406,6 +407,108 @@ check_oper_can_mask(aClient *sptr, char *name, char *password, char **onick)
     return 0;
 }
 #endif
+
+
+#define B_BASE                  1000
+
+static int Maskchecksum(char *data, int len)
+{
+	int i, j = 0;
+
+	for (i = 0; len--; i++)
+		j += *data++ * (i < 16 ? (i + 1)*(i + 1) : i*(i - 15));
+
+
+	return (j + B_BASE) % 0xffff;
+}
+
+/* Creates a hostmask */
+static void make_hostmask(aClient *sptr)
+{
+	static char mask[HOSTLEN + 1];
+	static char ipmask[HOSTIPLEN + 1];
+	char *s, *dot;
+	int csum, i, isdns = 0;
+	memset(mask, 0, 128);
+	s = sptr->sockhost;
+	csum = Maskchecksum(s, strlen(s));
+
+	if (strlen(s) > 127)
+		s[128] = 0;
+
+	for (i = 0; i<strlen(s); i++)
+	{
+		if (IsAlpha(s[i]))
+		{
+			isdns = 1;
+			break;
+		}
+	}
+	if (isdns)
+	{
+		dot = strchr(s, '.');
+
+		if (dot == NULL)
+			ircsprintf(mask, "%s-%d.%s", HostPrefix, csum, s);
+		else
+			ircsprintf(mask, "%s-%d.%s", HostPrefix, csum, dot + 1);
+	}
+	else
+	{
+		int sum;
+		strncpy(ipmask, s, sizeof(ipmask));
+		ipmask[sizeof(ipmask)-1] = '\0';
+		while ((dot = strrchr(ipmask, '.')))
+			*dot = '-';
+		sum = Maskchecksum(ipmask, strlen(ipmask));
+		ircsprintf(mask, "%s-%d.c%d.usr.%s",
+			HostPrefix, sum, csum, HostDomain);
+#ifdef ENABLE_CHANNEL_MODE_D
+		/*FIXME*/
+		SetURSL(sptr);
+		sendto_one(sptr, ":%s NOTICE %s :*** You have been marked has an unresolved client.",
+			me.name, sptr->name);
+#endif
+	}
+	strncpy(sptr->user->maskhost, mask, HOSTLEN + 1);
+	strcpy(sptr->user->host, sptr->user->maskhost);
+
+}
+
+/* Sets a hostmask accordingly */
+void set_hostmask(aClient *sptr)
+{
+
+	if (IsAnOper(sptr))
+	{
+		if (IsSAdmin(sptr))
+			strncpyzt(sptr->user->host, Staff_Address, HOSTLEN + 1);
+		else if (IsAdmin(sptr))
+			strncpyzt(sptr->user->host, Staff_Address, HOSTLEN + 1);
+		else if (IsOper(sptr))
+			strncpyzt(sptr->user->host, Staff_Address, HOSTLEN + 1);
+		else
+			strncpyzt(sptr->user->host, Staff_Address, HOSTLEN + 1);
+
+	}
+
+	else if (!IsUmodev(sptr))
+	{
+		strncpyzt(sptr->user->host, sptr->user->realhost, HOSTLEN + 1);
+	}
+
+	/* Looks like we have not made a hostmask this user, do it now. */
+	else if (*sptr->user->maskhost == '\0')
+		make_hostmask(sptr);
+
+	/* A hostmasking was already done for this user,
+	* since we stored it, we can use it again */
+	else
+		strncpyzt(sptr->user->host, sptr->user->maskhost, HOSTLEN + 1);
+	sendto_serv_butone(NULL, ":%s SVHOST %s %s", me.name,
+		sptr->name, sptr->user->host);
+}
+
 
 
 /* used by m_user, m_put, m_post */
@@ -2058,11 +2161,11 @@ m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
         
         buf[0] = '\0';
         if (IsAnOper(acptr))
-            strcat(buf, "an IRC Operator");
+			strcat(buf, "an \2IRC Operator\2");
         if (IsAdmin(acptr))
-            strcat(buf, " - Server Administrator");
+			strcat(buf, "an \2IRC Operator - Server Administrator\2");
         else if (IsSAdmin(acptr))
-            strcat(buf, " - Services Administrator");
+			strcat(buf, "an \2IRC Operator - Services Administrator\2");
         /* We don't go through the services tag list here by design, only the first services tag entry
            may change RPL_WHOISOPERATOR -Kobi_S. */
         if (buf[0] && (!acptr->user->servicestag || acptr->user->servicestag->raw!=RPL_WHOISOPERATOR))
@@ -2180,6 +2283,12 @@ do_user(char *nick, aClient *cptr, aClient *sptr, char *username, char *host,
 #ifndef NO_DEFAULT_INVISIBLE
         sptr->umode |= UMODE_i;
 #endif
+
+
+		if (confopts & FLAGS_AUTOUMODE_v)
+			SetUmodev(sptr);
+
+
 #ifdef USE_SSL
         if(IsSSL(sptr))
             sptr->umode |= UMODE_S;
@@ -2849,9 +2958,13 @@ int m_oper(aClient *cptr, aClient *sptr, int parc, char *parv[])
         Count.oper++;
         add_to_list(&oper_list, sptr);
         throttle_remove(oper_ip);
+	
         sendto_ops("%s (%s!%s@%s) is now operator (%c)", aoper->nick,
                    sptr->name, sptr->user->username, sptr->sockhost,
-                   IsOper(sptr) ? 'O' : 'o');
+                   IsOper(sptr) ? 'O' : 'o'); 
+
+		/* Set the operator hostmask*/
+		set_hostmask(sptr);
         send_umode_out(cptr, sptr, old);
         send_rplisupportoper(sptr);
         sendto_one(sptr, rpl_str(RPL_YOUREOPER), me.name, parv[0]);
@@ -3127,6 +3240,12 @@ m_umode(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 case '\n':
                 case '\t':
                     break;
+					break;
+//#ifdef STRICT_HOSTMASK
+//				case 'v': /* Users Can't unset themselves +v*/
+//					sendto_one(sptr, ":%s NOTICE %s :Permission denied, this server does not allow you to unset +v.", me.name,parv[0], sptr->user->host);
+//					break;
+//#endif
                 case 'r':
                 case 'x':
                 case 'X':
@@ -3192,6 +3311,48 @@ m_umode(aClient *cptr, aClient *sptr, int parc, char *parv[])
     if ((setflags & UMODE_i) && !IsInvisible(sptr))
         Count.invisi--;
     
+
+	/* Check if its my connect, if not we trust the server */
+	if (MyConnect(sptr))
+	{
+		if (!(setflags & UMODE_v) && IsUmodev(sptr))
+		{
+			set_hostmask(sptr);
+			sendto_one(sptr, ":%s NOTICE %s :Your host is now masked (%s).", me.name,
+				parv[0], sptr->user->host);
+		}
+		if ((setflags & UMODE_v) && !IsUmodev(sptr))
+		{
+			set_hostmask(sptr);
+			sendto_one(sptr, ":%s NOTICE %s :Your host is no longer masked.", me.name, parv[0]);
+		}
+		/*
+		if ((setflags & UMODE_H) && !IsUmodeH(sptr) && IsOper(sptr))
+		{
+			set_hostmask(sptr);
+
+		}
+
+		if (!(setflags & UMODE_H) && IsUmodeH(sptr) && IsOper(sptr))
+		{
+			set_hostmask(sptr);
+		}
+
+		if ((setflags & UMODE_Y) && !IsDeaf(sptr))
+		{
+			sptr->umode &= ~UMODE_Y;
+			sendto_one(sptr, ":%s NOTICE %s :*** Notice -- You are no longer marked as deaf and will receive channel messages and notices as normal..",
+				me.name, sptr->name);
+		}
+		if (!(setflags & UMODE_Y) && IsDeaf(sptr))
+		{
+			sptr->umode |= UMODE_Y;
+			sendto_one(sptr, ":%s NOTICE %s :*** Notice -- You have marked yourself as deaf and will no longer receive channel messages or notices from any channel.",
+				me.name, sptr->name);
+		}
+		*/
+	}
+
     /*
      * compare new flags with old flags and send string which will cause
      * servers to update correctly.

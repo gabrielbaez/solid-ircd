@@ -66,6 +66,11 @@ int  maxchannelsperuser, tsmaxdelta, tswarndelta;
 int  confopts, new_confopts;
 int  local_ip_limit, local_ip24_limit, global_ip_limit, global_ip24_limit;
 
+/* hostmasking */
+char HostPrefix[HOSTLEN + 1]; /* FIXME: A little too big? */
+char HostDomain[HOSTLEN + 1];
+
+
 /* this stuff by mnystrom@mit.edu */
 #include "fdlist.h"
 

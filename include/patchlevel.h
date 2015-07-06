@@ -19,10 +19,10 @@
 #ifndef __patchlevel_header__
 #define __patchlevel_header__
 
-#define BASENAME "bahamut"
-#define MAJOR 2
-#define MINOR 0
-#define PATCH 7
+#define BASENAME "solid-ircd"
+#define MAJOR 3
+#define MINOR 5
+#define PATCH 0
 
 #define PATCHES ""
 

@@ -55,6 +55,11 @@ void add_history(aClient *cptr, int online)
     strncpyzt(new->username, cptr->user->username, USERLEN + 1);
     strncpyzt(new->hostname, cptr->user->host, HOSTLEN + 1);
     strncpyzt(new->realname, cptr->info, REALLEN + 1);
+	if(MyClient(cptr))
+		strncpyzt(new->realhost, cptr->sockhost, HOSTLEN);
+	else
+		strncpyzt(new->realhost, cptr->user->realhost ?
+		cptr->user->realhost : cptr->user->host, HOSTLEN);
     /*
      * Its not string copied, a pointer to the scache hash is copied
      * -Dianora
@@ -144,7 +149,7 @@ int m_whowas(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		sendto_one(sptr, rpl_str(RPL_WHOWASUSER),
 			   me.name, parv[0], temp->name,
 			   temp->username,
-			   temp->hostname,
+			   IsAnOper(sptr) ? temp->realhost : temp->hostname,
 			   temp->realname);
 		if((temp->umode & UMODE_I) && !IsAnOper(sptr))
 		    sendto_one(sptr, rpl_str(RPL_WHOISSERVER),

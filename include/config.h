@@ -107,6 +107,11 @@
 #define DEFAULT_TSMAXDELTA 120
 #define DEFAULT_TSWARNDELTA 15
 
+
+/* Default host domain name */
+#define DEFAULT_HOST_DOMAIN "solid-ircd.com"
+
+
 /* default clone limits */
 #define DEFAULT_LOCAL_IP_CLONES    10
 #define DEFAULT_LOCAL_IP24_CLONES  60

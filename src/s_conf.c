@@ -124,6 +124,8 @@ void init_globals()
     local_ip24_limit = DEFAULT_LOCAL_IP24_CLONES;
     global_ip_limit = DEFAULT_GLOBAL_IP_CLONES;
     global_ip24_limit = DEFAULT_GLOBAL_IP24_CLONES;
+	strncpyzt(HostPrefix, Network_Name, sizeof(HostPrefix));
+	strncpyzt(HostDomain, DEFAULT_HOST_DOMAIN, sizeof(HostDomain));
 }
 
 
@@ -1137,6 +1139,24 @@ confadd_options(cVar *vars[], int lnum)
             tmp->type = NULL;
             tswarndelta = atoi(tmp->value);
         }
+		else if (tmp->type && (tmp->type->flag & OPTF_HOSTPREFIX))
+		{
+			tmp->type = NULL;
+			strncpyzt(HostPrefix, tmp->value,
+				sizeof(HostPrefix));
+		}
+		else if (tmp->type && (tmp->type->flag & OPTF_DOMAIN))
+		{
+			tmp->type = NULL;
+			strncpyzt(HostDomain, tmp->value,
+				sizeof(HostDomain));
+		}
+
+		else if (tmp->type && (tmp->type->flag & OPTF_AUTOUMODEV))
+		{
+			tmp->type = NULL;
+			new_confopts |= FLAGS_AUTOUMODE_v;
+		}
     }
     return lnum;
 }

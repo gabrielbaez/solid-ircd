@@ -315,6 +315,7 @@ typedef struct SServicesTag ServicesTag;
 #define UMODE_I     0x8000000   /* umode +I - invisible oper (masked) */
 #define UMODE_S     0x10000000  /* umode +S - User is using SSL */
 #define UMODE_C     0x20000000  /* umode +C - User is only accepting private messages from users who share a common channel with them */
+#define UMODE_v		0x40000000	/* umode +v - hostmasking */
 
 /* for sendto_ops_lev */
 
@@ -340,10 +341,10 @@ typedef struct SServicesTag ServicesTag;
 #define SEND_UMODES (UMODE_a|UMODE_i|UMODE_o|UMODE_r|UMODE_A|UMODE_I|UMODE_R|UMODE_S|UMODE_C)
 #define ALL_UMODES (SEND_UMODES|UMODE_b|UMODE_c|UMODE_d|UMODE_e|UMODE_f|\
                     UMODE_g|UMODE_h|UMODE_j|UMODE_k|UMODE_m|UMODE_n|UMODE_s|\
-                    UMODE_w|UMODE_y|UMODE_F|UMODE_K|UMODE_O)
+                    UMODE_w|UMODE_y|UMODE_F|UMODE_K|UMODE_O|UMODE_v)
 
 /* modes users can set themselves */
-#define USER_UMODES (UMODE_i|UMODE_k|UMODE_w|UMODE_s|UMODE_R|UMODE_C)
+#define USER_UMODES (UMODE_i|UMODE_k|UMODE_w|UMODE_s|UMODE_R|UMODE_C|UMODE_v)
 
 /* modes only opers can have */
 #define OPER_UMODES (UMODE_a|UMODE_b|UMODE_c|UMODE_d|UMODE_e|UMODE_f|UMODE_g|\
@@ -378,6 +379,7 @@ typedef struct SServicesTag ServicesTag;
 #define	IsUmodes(x)		((x)->umode & UMODE_s)
 #define	IsUmodeI(x)		((x)->umode & UMODE_I)
 #define IsNoNonReg(x)           ((x)->umode & UMODE_R)
+#define IsUmodev(x)             ((x)->umode & UMODE_v)
 #define IsWSquelch(x)           ((x)->umode & UMODE_x)
 #define IsSSquelch(x)           ((x)->umode & UMODE_X)
 #define IsSquelch(x)            (IsSSquelch(x) || IsWSquelch(x))
@@ -411,6 +413,7 @@ typedef struct SServicesTag ServicesTag;
 #define SetWSquelch(x)          ((x)->umode |= UMODE_x)
 #define SetSSquelch(x)          ((x)->umode |= UMODE_X)
 #define SetNoMsgThrottle(x)	((x)->umode |= UMODE_F)
+#define SetUmodev(x)		((x)->umode |= UMODE_v)
 #define	SetDNS(x)		((x)->flags |= FLAGS_DOINGDNS)
 #define	DoingDNS(x)		((x)->flags & FLAGS_DOINGDNS)
 #define	DoingAuth(x)		((x)->flags & FLAGS_AUTH)
@@ -452,6 +455,7 @@ typedef struct SServicesTag ServicesTag;
 #define ClearUmodek(x)		((x)->umode &= ~UMODE_k)
 #define ClearUmodes(x)		((x)->umode &= ~UMODE_s)
 #define ClearUmodeI(x)		((x)->umode &= ~UMODE_I)
+#define ClearUmodev(x)		((x)->umode &= ~UMODE_v)
 #define ClearNoNonReg(x)        ((x)->umode &= ~UMODE_R)
 #define ClearWSquelch(x)        ((x)->umode &= ~UMODE_x)
 #define ClearSSquelch(x)        ((x)->umode &= ~UMODE_X)
@@ -598,6 +602,7 @@ typedef struct Whowas
     char        name[NICKLEN + 1];
     char        username[USERLEN + 1];
     char        hostname[HOSTLEN + 1];
+	char        realhost[HOSTLEN + 1]; /* This will display the users real host on whowas */
     char       *servername;
     char        realname[REALLEN + 1];
     time_t      logoff;
@@ -675,6 +680,7 @@ typedef struct Whowas
 #define FLAGS_WGMON     (FLAGS_WGMONURL|FLAGS_WGMONHOST)
 #define FLAGS_SHOWLINKS 0x0040
 #define FLAGS_SPLITOPOK 0x0080
+#define FLAGS_AUTOUMODE_v  0x0400
 
 /* flags for connects */
 
@@ -837,6 +843,8 @@ struct User
     int         joined;        /* number of channels joined */
     char        username[USERLEN + 1];
     char        host[HOSTLEN + 1];
+	char        realhost[HOSTLEN + 1];
+	char        maskhost[HOSTLEN + 1];
     char       *server;        /* pointer to scached server name */
     unsigned int servicetype;  /* set by SVSMODE +T */
     unsigned long servicestamp; /* set by SVSMODE +d */
